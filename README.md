@@ -1,21 +1,21 @@
 # QuickSight Dashboard as Code — AI Agent Skill
 
-Amazon QuickSight の Analysis を JSON 定義（`AnalysisDefinition`）で管理するための AI エージェント向けナレッジベース。
+Knowledge base for AI coding agents to manage Amazon QuickSight Analyses as JSON definitions (`AnalysisDefinition`).
 
-## 概要
+## What is this?
 
-[Claude Code](https://github.com/anthropics/claude-code) や [Kiro](https://kiro.dev) などの AI コーディングエージェントが QuickSight の Dashboard as Code ワークフローを実行する際に参照するスキルファイル群。
+A skill file set that AI coding agents like [Claude Code](https://github.com/anthropics/claude-code) and [Kiro](https://kiro.dev) reference when executing QuickSight Dashboard as Code workflows.
 
-エージェントがこのスキルを読み込むことで、以下を正確に実行できるようになる：
+Loading this skill enables an agent to:
 
-- `CreateAnalysis` / `UpdateAnalysis` による Analysis の作成・更新
-- `AnalysisDefinition` JSON の構築（シート、ビジュアル、フィルタ、パラメータ、計算フィールド）
-- 非同期バリデーションエラーの診断と修正
-- `DescribeAnalysisDefinition` → 編集 → `UpdateAnalysis` のラウンドトリップ
+- Create and update Analyses via `CreateAnalysis` / `UpdateAnalysis`
+- Build `AnalysisDefinition` JSON (sheets, visuals, filters, parameters, calculated fields)
+- Diagnose and fix async validation errors
+- Execute the `DescribeAnalysisDefinition` → edit → `UpdateAnalysis` round-trip
 
-## セットアップ
+## Setup
 
-プロジェクトの `.claude/skills/` にコピーするだけでよい：
+Copy into your project's `.claude/skills/`:
 
 ```bash
 git clone https://github.com/Hoshock/QuickSight-Dashboard-As-Code.git
@@ -23,50 +23,50 @@ cp -r QuickSight-Dashboard-As-Code/.claude/skills/quicksight-knowledge \
   your-project/.claude/skills/
 ```
 
-## ファイル構成
+## File Structure
 
 ```
 .claude/skills/quicksight-knowledge/
-├── SKILL.md                              # エントリポイント（概要、制約、Gotchas）
+├── SKILL.md                              # Entry point (overview, constraints, gotchas)
 └── references/
-    ├── apis.md                           # API オペレーション（6 操作の詳細）
-    ├── cli-usage.md                      # AWS CLI の使い方
-    ├── workflow.md                       # ラウンドトリップワークフロー
-    ├── definition-top-level.md           # AnalysisDefinition トップレベル構造
-    ├── definition-sheets-layouts.md      # シートとレイアウト
-    ├── definition-visuals.md             # 25 種類のビジュアルタイプ
-    ├── definition-filters.md             # 8 種類のフィルタ
-    ├── definition-parameters.md          # パラメータ宣言
-    └── definition-calculated-fields.md   # 計算フィールドと式言語
+    ├── apis.md                           # API operations (6 operations in detail)
+    ├── cli-usage.md                      # AWS CLI usage
+    ├── workflow.md                       # Round-trip workflow
+    ├── definition-top-level.md           # AnalysisDefinition top-level structure
+    ├── definition-sheets-layouts.md      # Sheets and layouts
+    ├── definition-visuals.md             # 25 visual types
+    ├── definition-filters.md             # 8 filter types
+    ├── definition-parameters.md          # Parameter declarations
+    └── definition-calculated-fields.md   # Calculated fields and expression language
 ```
 
-## 含まれる内容
+## Contents
 
-| カテゴリ            | 内容                                                                                                                                |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| API リファレンス    | `CreateAnalysis`, `UpdateAnalysis`, `DescribeAnalysis`, `DescribeAnalysisDefinition`, `UpdateAnalysisPermissions`, `DeleteAnalysis` |
-| CLI ガイド          | `--cli-input-json file://` パターン、スケルトンワークフロー、ポーリングパターン                                                     |
-| Definition スキーマ | トップレベル構造、シート/レイアウト、25 ビジュアルタイプ、8 フィルタタイプ、4 パラメータタイプ、計算フィールド                      |
-| Verified Gotchas    | AWS ドキュメントに記載のない実装上の落とし穴（14 項目）                                                                             |
+| Category          | Coverage                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| API Reference     | `CreateAnalysis`, `UpdateAnalysis`, `DescribeAnalysis`, `DescribeAnalysisDefinition`, `UpdateAnalysisPermissions`, `DeleteAnalysis` |
+| CLI Guide         | `--cli-input-json file://` pattern, skeleton workflow, polling pattern                                                              |
+| Definition Schema | Top-level structure, sheets/layouts, 25 visual types, 8 filter types, 4 parameter types, calculated fields                          |
+| Verified Gotchas  | 14 undocumented pitfalls discovered through real deployments                                                                        |
 
-## Verified Gotchas（抜粋）
+## Verified Gotchas (excerpt)
 
-実際のデプロイで発見された、AWS ドキュメントに記載のない落とし穴：
+Pitfalls not covered in the AWS documentation, discovered through actual deployments:
 
-- **Analysis の権限は全 7 アクション必須** — 1 つでも欠けると非同期で `CREATION_FAILED`
-- **LineChart の Colors 使用時は Values が 1 つまで**
-- **集約済み CalculatedField に AggregationFunction を設定してはいけない**
-- **SheetControlLayouts は 12 列グリッド**（メインレイアウトの 36 列ではない）
-- **`parseDate` はタイムゾーンオフセットパターン非対応**
-- **`SelectAllOptions` を指定すると `CategoryValues` は無視される**
+- **Analysis permissions require all 7 actions** — omitting any causes async `CREATION_FAILED`
+- **LineChart with Colors: max 1 Value field**
+- **Aggregated CalculatedFields must omit AggregationFunction**
+- **SheetControlLayouts uses a 12-column grid** (not 36 like the main layout)
+- **`parseDate` does not support timezone offset patterns**
+- **`SelectAllOptions` overrides `CategoryValues`**
 
-全 14 項目は [SKILL.md](.claude/skills/quicksight-knowledge/SKILL.md) を参照。
+See [SKILL.md](.claude/skills/quicksight-knowledge/SKILL.md) for all 14 items.
 
-## 前提条件
+## Prerequisites
 
-- QuickSight **Enterprise エディション**以上（`Definition` による Dashboard as Code は Standard では利用不可）
-- DataSet が事前に作成済みであること（Analysis は既存の DataSet ARN を参照する）
+- QuickSight **Enterprise edition** or higher (Dashboard as Code via `Definition` is not available on Standard)
+- DataSets must be created beforehand (Analyses reference existing DataSet ARNs)
 
-## ライセンス
+## License
 
 MIT
